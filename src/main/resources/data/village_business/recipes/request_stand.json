@@ -1,0 +1,21 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+      "#": {
+        "item": "minecraft:barrel"
+      },
+      "X": {
+        "item": "minecraft:gold_ingot"
+      }
+    },
+    "pattern": [
+      "X",
+      "#"
+    ],
+    "result": {
+      "count": 1,
+      "item": "village_business:request_stand"
+    },
+    "show_notification": true
+}
