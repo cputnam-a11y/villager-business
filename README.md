@@ -6,11 +6,17 @@ Villager Business allows you to create Sales Stands, a new block where you can p
 
 Every item has its own price! Villagers are more likely to buy desirable items, and the time between visits to the shop depends on how frequently one would want to buy the item again (food sells frequently, but boats not so much).
 
+This mod is meant for fun, it hasn't been tested to see if its balanced compared to normal villager trading, so it may be very inefficient or too efficient, I don't know. The goal is to have a fun block that lets you have your own store, market or automated item sink and trading.
+
 ## Shortcomings
 
-This is my first minecraft mod ever, and I don't have any previous experience with Java or Mixins. I would have loved to add Roughly Enough Items compatibility to the request stand slot, but I failed. Porting this mod to other fabric versions, or to other mod loaders, is something I don't know how to do. Also, since the config file gets created only if the file doesn't exist already, if I ever update the config file generator, people that where already using the mod will not get the new config unless they delete their current config.
+This is my first minecraft mod ever, and I don't have any previous experience with Java or Mixins. I would have loved to add Roughly Enough Items compatibility to the request stand slot, but I failed.
 
-If you know modding, please use the github repository to contribute fixes or improvements, or fork it and make your own version.
+Villagers are forced to move to Sales Stands by repeatedly setting their walk position until they arrive, since I don't understand how Activities work.
+
+Since the config file gets created only if the file doesn't exist already, if I ever update the config file generator, people that where already using the mod will not get the new config unless they delete their current config.
+
+Porting this mod to other fabric versions, or to other mod loaders, is something I don't know how to do. If you know modding, please use the github repository to contribute fixes or improvements, or fork it and make your own version.
 
 ## Technical explanation
 
