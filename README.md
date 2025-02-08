@@ -8,6 +8,20 @@ Every item has its own price! Villagers are more likely to buy desirable items, 
 
 This mod is meant for fun, it hasn't been tested to see if its balanced compared to normal villager trading, so it may be very inefficient or too efficient, I don't know. The goal is to have a fun block that lets you have your own store, market or automated item sink and trading.
 
+## How to use
+
+### Sales stand
+
+Craft a Sales Stand and place it somewhere that has villagers nearby. Put the items you want to sell inside of the Sales Stand, and villagers may come to exchange emeralds for that item.
+
+### Request stand
+
+Craft a Request Stand and place it somewhere that has villagers nearby. Set the requested item by placing an item in the Request slot. Load the request stand with emeralds. Villagers will ocationally come by and give you that item in exchange for emeralds.
+
+### Emerald Nuggets
+
+This mod adds Emerald Nuggets, which are just 1/9th of an emerald, which you can craft like any other nugget.
+
 ## Shortcomings
 
 This is my first minecraft mod ever, and I don't have any previous experience with Java or Mixins. I would have loved to add Roughly Enough Items compatibility to the request stand slot, but I failed.
