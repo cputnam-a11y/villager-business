@@ -12,9 +12,12 @@ This mod is meant for fun, it hasn't been tested to see if its balanced compared
 
 ### Sales stand
 
+![Crafting an emerald on top of a barrel makes a Sales Stand](https://cdn.modrinth.com/data/cached_images/a493a5044cb031551d2f614a1fb5dff0ea7d6b89.png)
+
 Craft a Sales Stand and place it somewhere that has villagers nearby. Put the items you want to sell inside of the Sales Stand, and villagers may come to exchange emeralds for that item.
 
 ### Request stand
+![Crafting a gold ingot on top of a barrel makes a Request Stand](https://cdn.modrinth.com/data/cached_images/f7e27bf2b25b587df85a762b4b7b9fc954fd0c65.png)
 
 Craft a Request Stand and place it somewhere that has villagers nearby. Set the requested item by placing an item in the Request slot. Load the request stand with emeralds. Villagers will ocationally come by and give you that item in exchange for emeralds.
 
