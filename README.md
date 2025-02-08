@@ -8,7 +8,9 @@ Every item has its own price! Villagers are more likely to buy desirable items, 
 
 ## Shortcomings
 
-This is my first minecraft mod ever, and I don't have any previous experience with Java or Mixins. I would have loved to add Roughly Enough Items compatibility to the request stand slot, but I failed. Also, porting this mod to other fabric versions, or to other mod loaders, is something I don't know how to do. If you know modding, please use the github repository to contribute fixes or improvements, or fork it and make your own version.
+This is my first minecraft mod ever, and I don't have any previous experience with Java or Mixins. I would have loved to add Roughly Enough Items compatibility to the request stand slot, but I failed. Porting this mod to other fabric versions, or to other mod loaders, is something I don't know how to do. Also, since the config file gets created only if the file doesn't exist already, if I ever update the config file generator, people that where already using the mod will not get the new config unless they delete their current config.
+
+If you know modding, please use the github repository to contribute fixes or improvements, or fork it and make your own version.
 
 ## Technical explanation
 
