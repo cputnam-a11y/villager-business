@@ -10,5 +10,6 @@ public class VillagerBusinessDataGenerator implements DataGeneratorEntrypoint {
         pack.addProvider(VillagerBusinessRecipeProvider::new);
         pack.addProvider(VillagerBusinessModelProvider::new);
         pack.addProvider(VillagerBusinessEnglishLangProvider::new);
+        pack.addProvider(VillagerBusinessBlockLootTableProvider::new);
     }
 }
