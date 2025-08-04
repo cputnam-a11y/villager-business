@@ -1,0 +1,12 @@
+{
+  "block.village_business.request_stand": "Request Stand",
+  "block.village_business.sales_stand": "Sales Stand",
+  "item.village_business.emerald_nugget": "Emerald Nugget",
+  "village_business.chance_tip": "Chance of sale each visit",
+  "village_business.price": "Price",
+  "village_business.request": "Request",
+  "village_business.request_slot": "Item to request",
+  "village_business.return_tip": "Time for customers to return",
+  "village_business.seller_chance_tip": "Chance that the villager sells",
+  "village_business.seller_return_tip": "Time for sellers to return"
+}
