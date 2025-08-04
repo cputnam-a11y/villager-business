@@ -30,6 +30,7 @@ import org.apache.logging.log4j.LogManager;
  import java.io.File;
  import java.io.IOException;
  import java.io.PrintWriter;
+ import java.nio.charset.StandardCharsets;
  import java.nio.file.Files;
  import java.nio.file.Path;
  import java.util.HashMap;
@@ -113,7 +114,7 @@ import java.util.Set;
          Files.createFile( request.file.toPath() );
  
          // write default config data
-         PrintWriter writer = new PrintWriter(request.file, "UTF-8");
+         PrintWriter writer = new PrintWriter(request.file, StandardCharsets.UTF_8);
          writer.write( request.getConfig() );
          writer.close();
  
@@ -159,7 +160,7 @@ import java.util.Set;
          String identifier = "Config '" + request.filename + "'";
  
          if( !request.file.exists() ) {
-             LOGGER.info( identifier + " is missing, generating default one..." );
+             LOGGER.info("{} is missing, generating default one...", identifier);
  
              try {
                  createConfig();
@@ -265,7 +266,7 @@ import java.util.Set;
       * @return true if the operation was successful
       */
      public boolean delete() {
-         LOGGER.warn( "Config '" + request.filename + "' was removed from existence! Restart the game to regenerate it." );
+         LOGGER.warn("Config '{}' was removed from existence! Restart the game to regenerate it.", request.filename);
          return request.file.delete();
      }
  

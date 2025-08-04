@@ -5,35 +5,34 @@
 	"name": "Village Business",
 	"description": "Open your own business and have villagers show up and buy what you offer!",
 	"authors": [
-		"Marum_"
+		"Marum_",
+		"cputnam-a11y"
 	],
 	"contact": {
 		"homepage": "https://fabricmc.net/",
 		"sources": "https://github.com/FabricMC/fabric-example-mod"
 	},
-	"license": "CC0-1.0",
+	"license": "MIT",
 	"icon": "assets/village_business/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"net.marum.villagebusiness.VillageBusiness"
+			"net.marum.villagebusiness.VillagerBusiness"
 		],
 		"fabric-datagen": [
-			"net.marum.villagebusiness.VillageBusinessDataGenerator"
+          "net.marum.villagebusiness.datagen.VillagerBusinessDataGenerator"
 		],
 		"client": [
-			"net.marum.villagebusiness.VillageBusinessClient"
+			"net.marum.villagebusiness.VillagerBusinessClient"
 		]
 	},
 	"mixins": [
 		"village_business.mixins.json"
 	],
 	"depends": {
-		"fabricloader": ">=0.16.9",
-		"minecraft": "~1.20.1",
-		"java": ">=17",
+		"fabricloader": ">=0.17.0",
+		"minecraft": "~1.21.8",
+		"java": ">=21",
 		"fabric-api": "*"
-	},
-	"suggests": {
 	}
 }

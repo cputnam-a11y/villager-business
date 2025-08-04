@@ -1,60 +1,60 @@
 package net.marum.villagebusiness.block.entity;
 
-import org.joml.Quaternionf;
-
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
-import net.minecraft.client.render.model.json.ModelTransformationMode;
+import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.BlockItem;
+import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import org.joml.Quaternionf;
 
-public class SalesStandBlockEntityRenderer implements BlockEntityRenderer<SalesStandBlockEntity>{
+public class SalesStandBlockEntityRenderer implements BlockEntityRenderer<SalesStandBlockEntity> {
 
-    private final BlockEntityRendererFactory.Context context;
+    private final ItemRenderer itemRenderer;
     private final Quaternionf rotationMatrix = new Quaternionf(0.707f, 0f, 0f, 0.707f);
     private final Quaternionf slightRotationMatrix = new Quaternionf(0f, 0f, 0.0499792f, 0.9987503f);
 
     public SalesStandBlockEntityRenderer(BlockEntityRendererFactory.Context context) {
-        this.context = context;
+        this.itemRenderer = context.getItemRenderer();
     }
 
     @Override
-    public void render(SalesStandBlockEntity entity, float tickDelta, MatrixStack matrices,
-            VertexConsumerProvider vertexConsumers, int light, int overlay) {
+    public void render(SalesStandBlockEntity entity, float tickProgress, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, Vec3d cameraPos) {
         int lightAbove = WorldRenderer.getLightmapCoordinates(entity.getWorld(), entity.getPos().up());
         World world = entity.getWorld();
-        
+
         if (entity.getInputCount() > 0) {
             ItemStack product = entity.getStack(3);
             // Product
             int productCount = 1;
-            
+
             matrices.push();
             if (product.getItem() instanceof BlockItem) {
                 productCount = 1;
                 matrices.translate(0.5f, 1.2f, 0.5f);
                 matrices.scale(0.75f, 0.75f, 0.75f);
             } else {
-                productCount = Math.min(1+entity.getInputCount()/8, 5);
+                productCount = Math.min(1 + entity.getInputCount() / 8, 5);
                 matrices.translate(0.5f, 1.04f, 0.5f);
                 matrices.scale(0.75f, 0.75f, 0.75f);
-                matrices.multiply(rotationMatrix); 
+                matrices.multiply(rotationMatrix);
             }
-            
+
             for (int i = 0; i < productCount; i++) {
-                this.context.getItemRenderer().renderItem(
-                    product,
-                    ModelTransformationMode.FIXED,
-                    lightAbove,
-                    overlay,
-                    matrices,
-                    vertexConsumers,
-                    world,
-                    0
+                itemRenderer.renderItem(
+                        product,
+                        ItemDisplayContext.FIXED,
+                        lightAbove,
+                        overlay,
+                        matrices,
+                        vertexConsumers,
+                        world,
+                        0
                 );
                 matrices.translate(0f, 0f, -0.07f);
                 matrices.multiply(slightRotationMatrix);
@@ -72,21 +72,21 @@ public class SalesStandBlockEntityRenderer implements BlockEntityRenderer<SalesS
             int emeraldPile = entity.getOutputBlockCount();
             emeraldPile = Math.min(emeraldPile, 3);
             for (int i = 0; i < emeraldPile; i++) {
-                this.context.getItemRenderer().renderItem(
-                    emeraldStack,
-                    ModelTransformationMode.FIXED,
-                    lightAbove,
-                    overlay,
-                    matrices,
-                    vertexConsumers,
-                    world,
-                    0
+                itemRenderer.renderItem(
+                        emeraldStack,
+                        ItemDisplayContext.FIXED,
+                        lightAbove,
+                        overlay,
+                        matrices,
+                        vertexConsumers,
+                        world,
+                        0
                 );
                 matrices.translate(0f, 0f, -0.5f);
                 matrices.multiply(slightRotationMatrix);
             }
             matrices.pop();
-        } else if  (entity.getOutputEmeraldCount() > 0) {
+        } else if (entity.getOutputEmeraldCount() > 0) {
             ItemStack emeraldStack = entity.getStack(1);
             matrices.push();
             matrices.translate(0.15f, 1.03f, 0.15f);
@@ -95,15 +95,15 @@ public class SalesStandBlockEntityRenderer implements BlockEntityRenderer<SalesS
             int emeraldPile = entity.getOutputEmeraldCount();
             emeraldPile = Math.min(emeraldPile, 5);
             for (int i = 0; i < emeraldPile; i++) {
-                this.context.getItemRenderer().renderItem(
-                    emeraldStack,
-                    ModelTransformationMode.FIXED,
-                    lightAbove,
-                    overlay,
-                    matrices,
-                    vertexConsumers,
-                    world,
-                    0
+                itemRenderer.renderItem(
+                        emeraldStack,
+                        ItemDisplayContext.FIXED,
+                        lightAbove,
+                        overlay,
+                        matrices,
+                        vertexConsumers,
+                        world,
+                        0
                 );
                 matrices.translate(0f, 0f, -0.07f);
                 matrices.multiply(slightRotationMatrix);
@@ -118,15 +118,15 @@ public class SalesStandBlockEntityRenderer implements BlockEntityRenderer<SalesS
             int emeraldPile = entity.getOutputNuggetCount();
             emeraldPile = Math.min(emeraldPile, 5);
             for (int i = 0; i < emeraldPile; i++) {
-                this.context.getItemRenderer().renderItem(
-                    emeraldStack,
-                    ModelTransformationMode.FIXED,
-                    lightAbove,
-                    overlay,
-                    matrices,
-                    vertexConsumers,
-                    world,
-                    0
+                itemRenderer.renderItem(
+                        emeraldStack,
+                        ItemDisplayContext.FIXED,
+                        lightAbove,
+                        overlay,
+                        matrices,
+                        vertexConsumers,
+                        world,
+                        0
                 );
                 matrices.translate(0f, 0f, -0.07f);
                 matrices.multiply(slightRotationMatrix);

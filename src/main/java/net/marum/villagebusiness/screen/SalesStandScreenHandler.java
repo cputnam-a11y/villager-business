@@ -2,6 +2,7 @@ package net.marum.villagebusiness.screen;
 
 import net.marum.villagebusiness.block.entity.SalesStandBlockEntity;
 import net.marum.villagebusiness.init.VillagerBusinessItemInit;
+import net.marum.villagebusiness.network.OpenSalesStandPayload;
 import net.marum.villagebusiness.util.NonEmeraldSlot;
 import net.marum.villagebusiness.util.OutputOnlySlot;
 import net.minecraft.block.entity.BlockEntity;
@@ -10,23 +11,22 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.network.PacketByteBuf;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 
-public class SalesStandScreenHandler extends ScreenHandler{
+public class SalesStandScreenHandler extends ScreenHandler {
     private final Inventory inventory;
     public final SalesStandBlockEntity blockEntity;
 
-    public SalesStandScreenHandler(int syncId, PlayerInventory inventory, PacketByteBuf buf) {
-        this(syncId, inventory, inventory.player.getWorld().getBlockEntity(buf.readBlockPos()));
+    public SalesStandScreenHandler(int syncId, PlayerInventory inventory, OpenSalesStandPayload payload) {
+        this(syncId, inventory, inventory.player.getWorld().getBlockEntity(payload.pos()));
     }
 
     public SalesStandScreenHandler(int syncId, PlayerInventory playerInventory, BlockEntity blockEntity) {
-        super(VillageBusinessScreenHandlers.SALES_STAND_SCREEN_HANDLER, syncId);
-        this.inventory = (Inventory)blockEntity;
+        super(VillagerBusinessScreenHandlers.SALES_STAND_SCREEN_HANDLER, syncId);
+        this.inventory = (Inventory) blockEntity;
         inventory.onOpen(playerInventory.player);
-        this.blockEntity = (SalesStandBlockEntity)blockEntity;
+        this.blockEntity = (SalesStandBlockEntity) blockEntity;
 
         this.addSlot(new NonEmeraldSlot(inventory, 3, 15, 21));
         this.addSlot(new OutputOnlySlot(inventory, 2, 109, 21, VillagerBusinessItemInit.EMERALD_NUGGET));

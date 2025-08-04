@@ -1,8 +1,0 @@
-{
-    "parent": "minecraft:block/cube_bottom_top",
-    "textures": {
-        "side": "village_business:block/sales_stand_side",
-        "top": "village_business:block/sales_stand_top",
-        "bottom": "village_business:block/sales_stand_bottom"
-    }
-}

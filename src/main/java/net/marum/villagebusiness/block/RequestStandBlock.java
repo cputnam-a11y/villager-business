@@ -1,9 +1,8 @@
 package net.marum.villagebusiness.block;
 
-import org.jetbrains.annotations.Nullable;
-
+import com.mojang.serialization.MapCodec;
 import net.marum.villagebusiness.block.entity.RequestStandBlockEntity;
-import net.marum.villagebusiness.init.VillageBusinessBlockEntityTypeInit;
+import net.marum.villagebusiness.init.VillagerBusinessBlockEntityTypeInit;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
@@ -12,21 +11,28 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.screen.NamedScreenHandlerFactory;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.block.WireOrientation;
+import org.jetbrains.annotations.Nullable;
 
 public class RequestStandBlock extends BlockWithEntity {
+    private static final MapCodec<RequestStandBlock> CODEC = createCodec(RequestStandBlock::new);
 
     public RequestStandBlock(Settings settings) {
         super(settings);
         this.setDefaultState(this.stateManager.getDefaultState().with(Properties.POWERED, false));
+    }
+
+    @Override
+    protected MapCodec<? extends BlockWithEntity> getCodec() {
+        return CODEC;
     }
 
     @Override
@@ -40,38 +46,38 @@ public class RequestStandBlock extends BlockWithEntity {
     }
 
     @Override
-    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+    protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         if (!world.isClient()) {
             if (world.getBlockEntity(pos) instanceof RequestStandBlockEntity blockEntity) {
-                NamedScreenHandlerFactory screenHandlerFactory = blockEntity;
-                if (screenHandlerFactory != null) {
-                    player.openHandledScreen(screenHandlerFactory);
-                }
+                player.openHandledScreen(blockEntity);
             }
         }
         return ActionResult.SUCCESS;
     }
 
+
     @Nullable
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
-        return VillageBusinessBlockEntityTypeInit.REQUEST_STAND_ENTITY.instantiate(pos, state);
+        return VillagerBusinessBlockEntityTypeInit.REQUEST_STAND_ENTITY.instantiate(pos, state);
     }
 
     @Override
-    public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
-        if (state.getBlock() != newState.getBlock()) {
+    protected void onStateReplaced(BlockState state, ServerWorld world, BlockPos pos, boolean moved) {
+        if (state.getBlock() != world.getBlockState(pos).getBlock()) {
             BlockEntity blockEntity = world.getBlockEntity(pos);
             if (blockEntity instanceof RequestStandBlockEntity) {
-                ItemScatterer.spawn(world, pos, (RequestStandBlockEntity)blockEntity);
-                world.updateComparators(pos,this);
+                ItemScatterer.spawn(world, pos, (RequestStandBlockEntity) blockEntity);
+                world.updateComparators(pos, this);
             }
-            super.onStateReplaced(state, world, pos, newState, moved);
         }
+
+        super.onStateReplaced(state, world, pos, moved);
     }
 
     @Override
-    public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos fromPos, boolean notify) {
+    protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
+        super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
         boolean isPowered = world.isReceivingRedstonePower(pos);
         if (state.get(Properties.POWERED) != isPowered) {
             world.setBlockState(pos, state.with(Properties.POWERED, isPowered), 3);
@@ -81,6 +87,8 @@ public class RequestStandBlock extends BlockWithEntity {
     @Override
     @Nullable
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
-        return world.isClient() ? null : checkType(type, VillageBusinessBlockEntityTypeInit.REQUEST_STAND_ENTITY, RequestStandBlockEntity::tick);
+        return world.isClient()
+               ? null
+               : validateTicker(type, VillagerBusinessBlockEntityTypeInit.REQUEST_STAND_ENTITY, RequestStandBlockEntity::tick);
     }
 }

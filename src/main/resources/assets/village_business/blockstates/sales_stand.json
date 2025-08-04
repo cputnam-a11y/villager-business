@@ -1,6 +1,0 @@
-{
-    "variants": {
-        "powered=true": { "model": "village_business:block/sales_stand_powered" },
-        "powered=false": { "model": "village_business:block/sales_stand" }
-    }
-}

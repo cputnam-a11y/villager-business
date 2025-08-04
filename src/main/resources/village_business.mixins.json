@@ -3,7 +3,6 @@
 	"package": "net.marum.villagebusiness.mixin",
 	"compatibilityLevel": "JAVA_17",
 	"mixins": [
-		"VillageBusinessMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

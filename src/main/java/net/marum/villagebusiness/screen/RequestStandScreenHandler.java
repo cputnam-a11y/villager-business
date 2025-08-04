@@ -2,6 +2,7 @@ package net.marum.villagebusiness.screen;
 
 import net.marum.villagebusiness.block.entity.RequestStandBlockEntity;
 import net.marum.villagebusiness.init.VillagerBusinessItemInit;
+import net.marum.villagebusiness.network.OpenRequestStandPayload;
 import net.marum.villagebusiness.util.NonEmeraldSlot;
 import net.marum.villagebusiness.util.OutputOnlySlot;
 import net.minecraft.block.entity.BlockEntity;
@@ -10,23 +11,22 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.network.PacketByteBuf;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 
-public class RequestStandScreenHandler extends ScreenHandler{
+public class RequestStandScreenHandler extends ScreenHandler {
     private final Inventory inventory;
     public final RequestStandBlockEntity blockEntity;
 
-    public RequestStandScreenHandler(int syncId, PlayerInventory inventory, PacketByteBuf buf) {
-        this(syncId, inventory, inventory.player.getWorld().getBlockEntity(buf.readBlockPos()));
+    public RequestStandScreenHandler(int syncId, PlayerInventory inventory, OpenRequestStandPayload payload) {
+        this(syncId, inventory, inventory.player.getWorld().getBlockEntity(payload.pos()));
     }
 
     public RequestStandScreenHandler(int syncId, PlayerInventory playerInventory, BlockEntity blockEntity) {
-        super(VillageBusinessScreenHandlers.REQUEST_STAND_SCREEN_HANDLER, syncId);
-        this.inventory = (Inventory)blockEntity;
+        super(VillagerBusinessScreenHandlers.REQUEST_STAND_SCREEN_HANDLER, syncId);
+        this.inventory = (Inventory) blockEntity;
         inventory.onOpen(playerInventory.player);
-        this.blockEntity = (RequestStandBlockEntity)blockEntity;
+        this.blockEntity = (RequestStandBlockEntity) blockEntity;
 
         this.addSlot(new NonEmeraldSlot(inventory, 0, 145, 21));
         this.addSlot(new OutputOnlySlot(inventory, 3, 15, 21, VillagerBusinessItemInit.EMERALD_NUGGET));

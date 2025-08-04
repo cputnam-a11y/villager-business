@@ -1,32 +1,23 @@
 package net.marum.villagebusiness.block.entity;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.jetbrains.annotations.Nullable;
-
-import io.netty.buffer.Unpooled;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
 import net.fabricmc.fabric.api.transfer.v1.storage.base.SidedStorageBlockEntity;
-import net.marum.villagebusiness.VillageBusiness;
-import net.marum.villagebusiness.init.VillageBusinessBlockEntityTypeInit;
+import net.marum.villagebusiness.VillagerBusiness;
+import net.marum.villagebusiness.attachment.VillagerBusinessAttachmentInit;
+import net.marum.villagebusiness.init.VillagerBusinessBlockEntityTypeInit;
 import net.marum.villagebusiness.init.VillagerBusinessItemInit;
-import net.marum.villagebusiness.network.VillageBusinessNetworking;
+import net.marum.villagebusiness.network.OpenRequestStandPayload;
+import net.marum.villagebusiness.network.SetRequestStandFilterItemPayload;
+import net.marum.villagebusiness.network.VillagerBusinessNetworking;
 import net.marum.villagebusiness.pricing.ItemPrice;
 import net.marum.villagebusiness.pricing.ItemPrices;
 import net.marum.villagebusiness.screen.RequestStandScreenHandler;
 import net.marum.villagebusiness.util.VillagerLure;
+import net.marum.villagebusiness.villager.BusinessRecordList;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.entity.ai.brain.Activity;
-import net.minecraft.entity.ai.brain.BlockPosLookTarget;
-import net.minecraft.entity.ai.brain.Brain;
-import net.minecraft.entity.ai.brain.MemoryModuleType;
-import net.minecraft.entity.ai.brain.WalkTarget;
+import net.minecraft.entity.ai.brain.*;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -35,23 +26,31 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 
-public class RequestStandBlockEntity extends BlockEntity implements ExtendedScreenHandlerFactory, ImplementedInventory, SidedStorageBlockEntity {
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+public class RequestStandBlockEntity extends BlockEntity implements ExtendedScreenHandlerFactory<OpenRequestStandPayload>, ImplementedInventory, SidedStorageBlockEntity {
     private ItemStack filterItem = ItemStack.EMPTY;
 
     private final DefaultedList<ItemStack> inventory = DefaultedList.ofSize(4, ItemStack.EMPTY);
@@ -90,7 +89,7 @@ public class RequestStandBlockEntity extends BlockEntity implements ExtendedScre
     private int lastUpdatedBlockCount = 0;
 
     public RequestStandBlockEntity(BlockPos pos, BlockState state) {
-        super(VillageBusinessBlockEntityTypeInit.REQUEST_STAND_ENTITY, pos, state);
+        super(VillagerBusinessBlockEntityTypeInit.REQUEST_STAND_ENTITY, pos, state);
     }
 
     public ItemPrice getItemPrice() {
@@ -102,10 +101,7 @@ public class RequestStandBlockEntity extends BlockEntity implements ExtendedScre
     }
 
     public void sendRequestToServer(ItemStack itemStack) {
-        PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
-        buf.writeBlockPos(pos);
-        buf.writeItemStack(itemStack);
-        ClientPlayNetworking.send(VillageBusinessNetworking.REQUEST_PACKET, buf);
+        VillagerBusinessNetworking.sendToServerIfClient(new SetRequestStandFilterItemPayload(pos, itemStack));
         this.filterItem = itemStack;
         updatePrices();
     }
@@ -125,7 +121,7 @@ public class RequestStandBlockEntity extends BlockEntity implements ExtendedScre
     public static void tick(World world, BlockPos pos, BlockState state, RequestStandBlockEntity entity) {
         if (world == null || world.isClient())
             return;
-        
+
         if (entity.ticks == 0) {
             entity.updatePrices();
             entity.markDirty();
@@ -139,7 +135,7 @@ public class RequestStandBlockEntity extends BlockEntity implements ExtendedScre
         }
 
         // Move lured villagers every 0.5 second
-        if (entity.ticks % 10 == 0){
+        if (entity.ticks % 10 == 0) {
             entity.luringVillagers.forEach(lure -> {
                 if (lure.hasExpired()) {
                     entity.getFrustrated(lure.villager);
@@ -160,7 +156,7 @@ public class RequestStandBlockEntity extends BlockEntity implements ExtendedScre
                 entity.luringVillagers.remove(lure);
             });
             entity.markedForRemovalVillagers.clear();
-            
+
             boolean inventoryChanged = false;
             if (entity.getStack(OUTPUT_SLOT).getCount() != entity.lastUpdatedOutputCount) {
                 entity.lastUpdatedOutputCount = entity.getStack(OUTPUT_SLOT).getCount();
@@ -171,8 +167,8 @@ public class RequestStandBlockEntity extends BlockEntity implements ExtendedScre
                 inventoryChanged = true;
             }
             if (entity.getStack(INPUT_SLOT_NUGGETS).getCount() != entity.lastUpdatedBlockCount ||
-            entity.getStack(INPUT_SLOT_EMERALDS).getCount() != entity.lastUpdatedEmeraldCount ||
-            entity.getStack(INPUT_SLOT_BLOCKS).getCount() != entity.lastUpdatedNuggetCount) {
+                    entity.getStack(INPUT_SLOT_EMERALDS).getCount() != entity.lastUpdatedEmeraldCount ||
+                    entity.getStack(INPUT_SLOT_BLOCKS).getCount() != entity.lastUpdatedNuggetCount) {
                 inventoryChanged = true;
                 entity.lastUpdatedNuggetCount = entity.getStack(INPUT_SLOT_NUGGETS).getCount();
                 entity.lastUpdatedEmeraldCount = entity.getStack(INPUT_SLOT_EMERALDS).getCount();
@@ -187,8 +183,8 @@ public class RequestStandBlockEntity extends BlockEntity implements ExtendedScre
         // Find nearby villagers every 20 seconds
         if (entity.ticks >= 400) {
             entity.foundVillagers = world.getEntitiesByClass(VillagerEntity.class,
-            new Box(pos.add(-RADIUS, -RADIUS, -RADIUS), pos.add(RADIUS, RADIUS, RADIUS)), 
-            villager -> true);
+                    Box.from(BlockBox.create(pos.add(-RADIUS, -RADIUS, -RADIUS), pos.add(RADIUS, RADIUS, RADIUS))),
+                    villager -> true);
             //VillageBusiness.LOGGER.info("Found "+foundVillagers.size()+" villagers");
             entity.ticks = world.random.nextBetween(-10, 10);
         }
@@ -199,11 +195,11 @@ public class RequestStandBlockEntity extends BlockEntity implements ExtendedScre
     private boolean villagerIsBusy(VillagerEntity villager) {
         Brain<VillagerEntity> brain = villager.getBrain();
         return (brain.hasActivity(Activity.REST) ||
-        brain.hasActivity(Activity.HIDE) ||
-        brain.hasActivity(Activity.PANIC) ||
-        brain.hasActivity(Activity.SWIM) ||
-        brain.hasActivity(Activity.PLAY) ||
-        brain.hasActivity(Activity.WORK));
+                brain.hasActivity(Activity.HIDE) ||
+                brain.hasActivity(Activity.PANIC) ||
+                brain.hasActivity(Activity.SWIM) ||
+                brain.hasActivity(Activity.PLAY) ||
+                brain.hasActivity(Activity.WORK));
     }
 
     private void attractVillager() {
@@ -212,20 +208,19 @@ public class RequestStandBlockEntity extends BlockEntity implements ExtendedScre
                 if (!villager.isBaby()) {
                     if (world.random.nextInt(100) < ATTRACT_CHANCE) {
                         if (world.random.nextInt(100) < itemPrice.getRequestChance()) {
-                            if(!villagerIsBusy(villager)) {
-                                NbtCompound nbt = new NbtCompound();
-                                villager.writeCustomDataToNbt(nbt);
+                            if (!villagerIsBusy(villager)) {
                                 boolean willShop = true;
-                                if (nbt.contains("LastLuredByBusiness")) {
-                                    if (nbt.getLong("LastLuredByBusiness")+LURED_BY_SALES_COOLDOWN*1000 > System.currentTimeMillis()) {
+                                if (villager.hasAttached(VillagerBusinessAttachmentInit.LAST_LURED_BY_BUSINESS)) {
+                                    if (villager.getAttached(VillagerBusinessAttachmentInit.LAST_LURED_BY_BUSINESS) + LURED_BY_SALES_COOLDOWN * 1000 > System.currentTimeMillis()) {
                                         willShop = false;
                                     }
                                 }
-                                if (willShop && nbt.contains("BusinessRecords")) {
-                                    NbtCompound records = nbt.getCompound("BusinessRecords");
+
+                                if (willShop && villager.hasAttached(VillagerBusinessAttachmentInit.BUSINESS_RECORDS)) {
+                                    BusinessRecordList records = villager.getAttached(VillagerBusinessAttachmentInit.BUSINESS_RECORDS);
                                     String itemId = getSellingItemID();
-                                    if (records.getKeys().contains(itemId)) {
-                                        if (records.getLong(itemId) > System.currentTimeMillis()) {
+                                    if (records.contains(itemId)) {
+                                        if (records.get(itemId).timestamp() > System.currentTimeMillis()) {
                                             willShop = false;
                                         }
                                     }
@@ -243,9 +238,7 @@ public class RequestStandBlockEntity extends BlockEntity implements ExtendedScre
 
     private void moveVillagerTowardBlock(VillagerEntity villager) {
         NbtCompound nbt = new NbtCompound();
-        villager.writeCustomDataToNbt(nbt);
-        nbt.putLong("LastLuredByBusiness", System.currentTimeMillis());
-        villager.readCustomDataFromNbt(nbt);
+        villager.setAttached(VillagerBusinessAttachmentInit.LAST_LURED_BY_BUSINESS, System.currentTimeMillis());
 
         Brain<VillagerEntity> brain = villager.getBrain();
         brain.doExclusively(Activity.IDLE);
@@ -262,16 +255,16 @@ public class RequestStandBlockEntity extends BlockEntity implements ExtendedScre
 
     private void performSale(VillagerEntity villager) {
         int outputCount = getStack(OUTPUT_SLOT).getCount();
-        this.setStack(OUTPUT_SLOT, new ItemStack(filterItem.getItem(), outputCount+itemPrice.getSellAmount(priceSetting)));
+        this.setStack(OUTPUT_SLOT, new ItemStack(filterItem.getItem(), outputCount + itemPrice.getSellAmount(priceSetting)));
 
         if (getStack(INPUT_SLOT_NUGGETS).isEmpty())
             inputNuggetCount = 0;
         else
             inputNuggetCount = getStack(INPUT_SLOT_NUGGETS).getCount();
-        
+
         if (getStack(INPUT_SLOT_EMERALDS).isEmpty())
             inputEmeraldCount = 0;
-        else 
+        else
             inputEmeraldCount = getStack(INPUT_SLOT_EMERALDS).getCount();
 
         if (getStack(INPUT_SLOT_BLOCKS).isEmpty())
@@ -307,13 +300,10 @@ public class RequestStandBlockEntity extends BlockEntity implements ExtendedScre
         }
 
         if (villager != null) {
-            NbtCompound nbt = new NbtCompound();
-            villager.writeCustomDataToNbt(nbt);
-            NbtCompound business = nbt.getCompound("BusinessRecords");
-            long timeMultiplier = VillageBusiness.CONFIG.getOrDefault("request_time_multiplier", 2);
-            business.putLong(getSellingItemID(), System.currentTimeMillis()+(int)(SUCCESSFUL_PURCHASE_COOLDOWN*1000*itemPrice.getCooldown(this.priceSetting)*timeMultiplier));
-            nbt.put("BusinessRecords", business);
-            villager.readCustomDataFromNbt(nbt);
+            var records = villager.getAttachedOrCreate(VillagerBusinessAttachmentInit.BUSINESS_RECORDS);
+            long timeMultiplier = VillagerBusiness.CONFIG.getOrDefault("request_time_multiplier", 2);
+            records = records.add(getSellingItemID(), System.currentTimeMillis() + (int) (SUCCESSFUL_PURCHASE_COOLDOWN * 1000 * itemPrice.getCooldown(this.priceSetting) * timeMultiplier));
+            villager.setAttached(VillagerBusinessAttachmentInit.BUSINESS_RECORDS, records);
 
             world.playSound(null, pos, SoundEvents.ENTITY_VILLAGER_TRADE, SoundCategory.BLOCKS, 1.0F, 1.0F);
             world.playSound(null, pos, SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.BLOCKS, 1.0F, 1.0F);
@@ -327,12 +317,9 @@ public class RequestStandBlockEntity extends BlockEntity implements ExtendedScre
     }
 
     private void getFrustrated(VillagerEntity villager) {
-        NbtCompound nbt = new NbtCompound();
-        villager.writeCustomDataToNbt(nbt);
-        NbtCompound business = nbt.getCompound("BusinessRecords");
-        business.putLong(getSellingItemID(), System.currentTimeMillis()+REJECTED_PURCHASE_COOLDOWN*300000); // Ignore item for 5 minutes
-        nbt.put("BusinessRecords", business);
-        villager.readCustomDataFromNbt(nbt);
+        var records = villager.getAttachedOrCreate(VillagerBusinessAttachmentInit.BUSINESS_RECORDS);
+        records = records.add(getSellingItemID(), System.currentTimeMillis() + (int) (REJECTED_PURCHASE_COOLDOWN * 1000 * itemPrice.getCooldown(this.priceSetting))); // Ignore item for 5 minutes
+        villager.setAttached(VillagerBusinessAttachmentInit.BUSINESS_RECORDS, records);
 
         world.playSound(null, pos, SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.BLOCKS, 1.0F, 1.0F);
         ((ServerWorld) world).spawnParticles(ParticleTypes.ANGRY_VILLAGER, villager.getX(), villager.getY() + 1, villager.getZ(), 5, 1, 1, 1, 0.1);
@@ -365,22 +352,22 @@ public class RequestStandBlockEntity extends BlockEntity implements ExtendedScre
         if (itemPrice == null) return false;
         if (getStack(OUTPUT_SLOT).isEmpty()) return true;
         if (!getStack(OUTPUT_SLOT).isOf(filterItem.getItem())) return false;
-        return getStack(OUTPUT_SLOT).getCount()+itemPrice.getSellAmount(1) <= filterItem.getMaxCount();
+        return getStack(OUTPUT_SLOT).getCount() + itemPrice.getSellAmount(1) <= filterItem.getMaxCount();
     }
 
     public boolean hasEnoughEmeralds() {
         inputNuggetCount = getStack(INPUT_SLOT_NUGGETS).getCount();
         inputEmeraldCount = getStack(INPUT_SLOT_EMERALDS).getCount();
         inputBlockCount = getStack(INPUT_SLOT_BLOCKS).getCount();
-        return inputNuggetCount + inputEmeraldCount*9 + inputBlockCount*81 >= getRequestPrice();
+        return inputNuggetCount + inputEmeraldCount * 9 + inputBlockCount * 81 >= getRequestPrice();
     }
 
     public int getRequestPrice() {
-        return (int)Math.round(itemPrice.getPrice(1)*priceMultiplier);
+        return (int) Math.round(itemPrice.getPrice(1) * priceMultiplier);
     }
 
     public int getRequestCooldown() {
-        return (int)Math.round(itemPrice.getCooldown(1)*cooldownMultiplier);
+        return (int) Math.round(itemPrice.getCooldown(1) * cooldownMultiplier);
     }
 
     public int getRequestChance() {
@@ -408,22 +395,17 @@ public class RequestStandBlockEntity extends BlockEntity implements ExtendedScre
             return;
         }
 
-        if (ItemPrices.priceList.containsKey(stack.getItem())) {
-            itemPrice = ItemPrices.priceList.get(stack.getItem());
-        } else {
-            itemPrice = null;
-        }
+        itemPrice = ItemPrices.priceList.getOrDefault(stack.getItem(), null);
 
-        priceMultiplier = VillageBusiness.CONFIG.getOrDefault("request_price_multiplier", 1f);
-        cooldownMultiplier = VillageBusiness.CONFIG.getOrDefault("request_cooldown_multiplier", 1f);
+        priceMultiplier = VillagerBusiness.CONFIG.getOrDefault("request_price_multiplier", 1f);
+        cooldownMultiplier = VillagerBusiness.CONFIG.getOrDefault("request_cooldown_multiplier", 1f);
     }
 
     @Override
     public boolean canInsert(int slot, ItemStack stack, @Nullable Direction side) {
         if (stack.getItem() == Items.EMERALD_BLOCK && slot == INPUT_SLOT_BLOCKS) return true;
         if (stack.getItem() == Items.EMERALD && slot == INPUT_SLOT_EMERALDS) return true;
-        if (stack.getItem() == VillagerBusinessItemInit.EMERALD_NUGGET && slot == INPUT_SLOT_NUGGETS) return true;
-        return false;
+        return stack.getItem() == VillagerBusinessItemInit.EMERALD_NUGGET && slot == INPUT_SLOT_NUGGETS;
     }
 
     @Override
@@ -432,7 +414,7 @@ public class RequestStandBlockEntity extends BlockEntity implements ExtendedScre
             return true;
         return slot == OUTPUT_SLOT;
     }
-            
+
     @Override
     public Text getDisplayName() {
         return Text.translatable("block.village_business.request_stand");
@@ -453,77 +435,53 @@ public class RequestStandBlockEntity extends BlockEntity implements ExtendedScre
     }
 
     @Override
-    public void writeScreenOpeningData(ServerPlayerEntity player, PacketByteBuf buf) {
-        buf.writeBlockPos(this.pos);
+    public OpenRequestStandPayload getScreenOpeningData(ServerPlayerEntity player) {
+        return new OpenRequestStandPayload(this.pos);
     }
 
     @Override
-    public void readNbt(NbtCompound nbt) {
-        super.readNbt(nbt);
-        Inventories.readNbt(nbt, inventory);
-        if (nbt.contains("InputCount", NbtElement.INT_TYPE)) {
-			this.inputCount = nbt.getInt("InputCount");
-		}
-        if (nbt.contains("OutputNuggetCount", NbtElement.INT_TYPE)) {
-			this.inputNuggetCount = nbt.getInt("OutputNuggetCount");
-		}
-        if (nbt.contains("OutputEmeraldCount", NbtElement.INT_TYPE)) {
-			this.inputEmeraldCount = nbt.getInt("OutputEmeraldCount");
-		}
-        if (nbt.contains("OutputBlockCount", NbtElement.INT_TYPE)) {
-			this.inputBlockCount = nbt.getInt("OutputBlockCount");
-		}
-        if (nbt.contains("FilterItem")) {
-            filterItem = ItemStack.fromNbt(nbt.getCompound("FilterItem"));
-        } else {
-            filterItem = ItemStack.EMPTY;
-        }
-
+    protected void readData(ReadView view) {
+        super.readData(view);
+        Inventories.readData(view, inventory);
+        view.getOptionalInt("InputCount").ifPresent(value -> this.inputCount = value);
+        view.getOptionalInt("OutputNuggetCount").ifPresent(value -> this.inputNuggetCount = value);
+        view.getOptionalInt("OutputEmeraldCount").ifPresent(value -> this.inputEmeraldCount = value);
+        view.getOptionalInt("OutputBlockCount").ifPresent(value -> this.inputBlockCount = value);
+        filterItem = view.read("FilterItem", ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);
         if (world != null && world.isClient()) {
-            int sellAmount = 0;
-            int price = 0;
-            int requestChance = 0;
-            int cooldown = 0;
-            if (nbt.contains("SellAmount", NbtElement.INT_TYPE)) {
-                sellAmount = nbt.getInt("SellAmount");
-            }
-            if (nbt.contains("Price", NbtElement.INT_TYPE)) {
-                price = nbt.getInt("Price");
-            }
-            if (nbt.contains("RequestChance", NbtElement.INT_TYPE)) {
-                requestChance = nbt.getInt("RequestChance");
-            }
-            if (nbt.contains("Cooldown", NbtElement.INT_TYPE)) {
-                cooldown = nbt.getInt("Cooldown");
-            }
-            itemPrice = new ItemPrice(getStack(OUTPUT_SLOT).getItem(), price, sellAmount, 0, requestChance, cooldown);
+            itemPrice = new ItemPrice(
+                    getStack(OUTPUT_SLOT).getItem(),
+                    view.getInt("SellAmount", 0),
+                    view.getInt("Price", 0),
+                    0,
+                    view.getInt("RequestChance", 0),
+                    view.getInt("Cooldown", 0)
+            );
         }
         updatePrices();
     }
 
     @Override
-    protected void writeNbt(NbtCompound nbt) {
-        super.writeNbt(nbt);
-        Inventories.writeNbt(nbt, inventory);
-        nbt.putInt("InputCount", this.inputCount);
-        nbt.putInt("OutputNuggetCount", this.inputNuggetCount);
-        nbt.putInt("OutputEmeraldCount", this.inputEmeraldCount);
-        nbt.putInt("OutputBlockCount", this.inputBlockCount);
-
+    protected void writeData(WriteView view) {
+        super.writeData(view);
+        Inventories.writeData(view, inventory);
+        view.putInt("InputCount", this.inputCount);
+        view.putInt("OutputNuggetCount", this.inputNuggetCount);
+        view.putInt("OutputEmeraldCount", this.inputEmeraldCount);
+        view.putInt("OutputBlockCount", this.inputBlockCount);
         if (itemPrice != null) {
-            nbt.putInt("SellAmount", itemPrice.getSellAmount(1));
-            nbt.putInt("Price", itemPrice.getPrice(1));
-            nbt.putInt("RequestChance", itemPrice.getRequestChance());
-            nbt.putInt("Cooldown", itemPrice.getCooldown(1));
+            view.putInt("SellAmount", itemPrice.getSellAmount(1));
+            view.putInt("Price", itemPrice.getPrice(1));
+            view.putInt("RequestChance", itemPrice.getRequestChance());
+            view.putInt("Cooldown", itemPrice.getCooldown(1));
         } else {
-            nbt.putInt("SellAmount", 0);
-            nbt.putInt("Price", 0);
-            nbt.putInt("RequestChance", 0);
-            nbt.putInt("Cooldown", 0);
+            view.putInt("SellAmount", 0);
+            view.putInt("Price", 0);
+            view.putInt("RequestChance", 0);
+            view.putInt("Cooldown", 0);
         }
-
         if (!filterItem.isEmpty()) {
-            nbt.put("FilterItem", filterItem.writeNbt(new NbtCompound()));
+            view.put("FilterItem", ItemStack.OPTIONAL_CODEC, filterItem);
         }
     }
 
@@ -532,25 +490,24 @@ public class RequestStandBlockEntity extends BlockEntity implements ExtendedScre
     }
 
     @Override
-    public NbtCompound toInitialChunkDataNbt() {
-        NbtCompound nbt = new NbtCompound();
-        this.writeNbt(nbt);
+    public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
+        NbtCompound nbt = createNbt(registries);
         updatePrices();
         return nbt;
     }
 
     public BlockEntityUpdateS2CPacket toUpdatePacket() {
-		return BlockEntityUpdateS2CPacket.create(this);
-	}
+        return BlockEntityUpdateS2CPacket.create(this);
+    }
 
-	public void updateListeners() {
+    public void updateListeners() {
         this.inputCount = getStack(OUTPUT_SLOT).getCount();
         this.inputNuggetCount = getStack(INPUT_SLOT_NUGGETS).getCount();
         this.inputEmeraldCount = getStack(INPUT_SLOT_EMERALDS).getCount();
         this.inputBlockCount = getStack(INPUT_SLOT_BLOCKS).getCount();
-		this.markDirty();
-		this.getWorld().updateListeners(pos, this.getCachedState(), this.getCachedState(), Block.NOTIFY_ALL);
-	}
+        this.markDirty();
+        this.getWorld().updateListeners(pos, this.getCachedState(), this.getCachedState(), Block.NOTIFY_ALL);
+    }
 
     public int getInputCount() {
         return inputCount;
